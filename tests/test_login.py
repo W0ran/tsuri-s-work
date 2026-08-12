@@ -11,7 +11,10 @@ def test_login_page_loads(login_page):
 
 
 def test_successful_login(login_page, page):
-    login_page.login(config.APPLICANT_LOGIN, config.APPLICANT_PASSWORD)
+    login_page.login(
+        config.USERS["applicant"]["login"],
+        config.USERS["applicant"]["password"],
+    )
 
     home = HomePage(page)
     expect(page).to_have_url(f"{config.BASE_URL}/applicant")

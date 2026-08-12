@@ -1,0 +1,32 @@
+# Секреты и окружение
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# pytest / отчёты
+.pytest_cache/
+htmlcov/
+*.html
+allure-results/
+allure-report/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Сгенерированные тестовые файлы (создаются автоматически generate_fixtures.py)
+fixtures/sample_documents/
+fixtures/invalid_documents/
+
+# IDE
+.vscode/
+.idea/
+
+# ОС
+.DS_Store
