@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from pages.base_page import BasePage
 
 
@@ -18,3 +18,12 @@ class LoginPage(BasePage):
         self.login_input.fill(login)
         self.password_input.fill(password)
         self.submit_button.click()
+
+    def is_error_visible(self, timeout: int = 10_000) -> bool:
+        # ответ сервера на попытку логина занимает время — ждём появления
+        # сообщения об ошибке, а не снимаем мгновенное is_visible()
+        try:
+            expect(self.error_message).to_be_visible(timeout=timeout)
+            return True
+        except AssertionError:
+            return False

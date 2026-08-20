@@ -5,6 +5,7 @@ fixtures/sample_documents и fixtures/invalid_documents всегда были н
 даже на чистом клоне репозитория (эти файлы не хранятся в git).
 """
 
+import struct
 import zipfile
 from pathlib import Path
 
@@ -56,9 +57,95 @@ MINIMAL_PNG_FALLBACK = bytes.fromhex(
     "ae426082"                  # CRC32(IEND)
 )
 
-DOC_MAGIC = bytes.fromhex("D0CF11E0A1B11AE1") + b"\x00" * 504
-
 EXE_STUB = b"MZ" + b"\x00" * 62 + b"This program cannot be run in DOS mode.\r\r\n$" + b"\x00" * 200
+
+_SECTOR = 512
+_ENDOFCHAIN = 0xFFFFFFFE
+_FREESECT = 0xFFFFFFFF
+_FATSECT = 0xFFFFFFFD
+
+
+def _ole_name_field(name: str) -> bytes:
+    encoded = name.encode("utf-16-le") + b"\x00\x00"
+    return encoded + b"\x00" * (64 - len(encoded))
+
+
+def _ole_dir_entry(
+    name: str,
+    object_type: int,
+    color: int,
+    child: int,
+    start_sector: int,
+    stream_size: int,
+) -> bytes:
+    name_len = (len(name) + 1) * 2 if name else 0
+    return (
+        _ole_name_field(name)
+        + struct.pack("<H", name_len)
+        + bytes([object_type, color])
+        + struct.pack("<I", _FREESECT)  # left sibling
+        + struct.pack("<I", _FREESECT)  # right sibling
+        + struct.pack("<I", child)
+        + b"\x00" * 16  # CLSID
+        + struct.pack("<I", 0)  # state bits
+        + b"\x00" * 8  # creation time
+        + b"\x00" * 8  # modified time
+        + struct.pack("<I", start_sector)
+        + struct.pack("<Q", stream_size)
+    )
+
+
+def _build_minimal_doc() -> bytes:
+    """Минимальный, но структурно валидный OLE2 Compound File Binary (.doc)
+    с одним потоком "WordDocument". Поток начинается с классической FIB-магии
+    Word 97-2003 (0xA5EC, little-endian) и дополнен нулями до 4096 байт —
+    это ровно порог mini-stream, так что поток целиком лежит в обычных
+    секторах и не требует реализации MiniFAT."""
+    stream_data = bytes([0xEC, 0xA5]) + b"\x00" * (4096 - 2)
+    n_stream_sectors = len(stream_data) // _SECTOR  # 8
+    dir_sector = 1
+    stream_start = 2
+
+    header = (
+        b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"  # сигнатура CFB
+        + b"\x00" * 16  # CLSID
+        + struct.pack("<H", 0x003E)  # minor version
+        + struct.pack("<H", 0x0003)  # major version (3 -> сектор 512Б)
+        + struct.pack("<H", 0xFFFE)  # byte order mark
+        + struct.pack("<H", 9)  # sector shift (2^9 = 512)
+        + struct.pack("<H", 6)  # mini sector shift (2^6 = 64)
+        + b"\x00" * 6  # reserved
+        + struct.pack("<I", 0)  # число directory-секторов (0 для v3)
+        + struct.pack("<I", 1)  # число FAT-секторов
+        + struct.pack("<I", dir_sector)  # первый directory-сектор
+        + struct.pack("<I", 0)  # transaction signature
+        + struct.pack("<I", 0x1000)  # mini stream cutoff (4096)
+        + struct.pack("<I", _ENDOFCHAIN)  # первый mini FAT сектор (нет)
+        + struct.pack("<I", 0)  # число mini FAT секторов
+        + struct.pack("<I", _ENDOFCHAIN)  # первый DIFAT сектор (нет)
+        + struct.pack("<I", 0)  # число DIFAT секторов
+        + struct.pack("<I", 0)  # DIFAT[0] = сектор 0 (FAT)
+        + struct.pack("<I", _FREESECT) * 108  # остальные DIFAT — не используются
+    )
+    assert len(header) == 512
+
+    fat_entries = [_FATSECT, _ENDOFCHAIN]
+    for i in range(n_stream_sectors):
+        sector = stream_start + i
+        fat_entries.append(_ENDOFCHAIN if i == n_stream_sectors - 1 else sector + 1)
+    fat_entries += [_FREESECT] * (_SECTOR // 4 - len(fat_entries))
+    fat_sector = b"".join(struct.pack("<I", v) for v in fat_entries)
+    assert len(fat_sector) == 512
+
+    root_entry = _ole_dir_entry("Root Entry", 0x05, 0x01, child=1, start_sector=_ENDOFCHAIN, stream_size=0)
+    word_entry = _ole_dir_entry(
+        "WordDocument", 0x02, 0x01, child=_FREESECT, start_sector=stream_start, stream_size=len(stream_data)
+    )
+    empty_entry = _ole_dir_entry("", 0x00, 0x00, child=_FREESECT, start_sector=0, stream_size=0)
+    dir_sector_bytes = root_entry + word_entry + empty_entry + empty_entry
+    assert len(dir_sector_bytes) == 512
+
+    return header + fat_sector + dir_sector_bytes + stream_data
 
 
 def _write(path: Path, data: bytes) -> None:
@@ -123,7 +210,7 @@ def ensure_fixture_files() -> None:
     """Создаёт недостающие тестовые файлы в fixtures/. Идемпотентно — существующие не трогает."""
     _write(SAMPLE_DIR / "sample.pdf", MINIMAL_PDF)
     _write_image(SAMPLE_DIR / "sample.png", SAMPLE_DIR / "sample.jpg")
-    _write(SAMPLE_DIR / "sample.doc", DOC_MAGIC)
+    _write(SAMPLE_DIR / "sample.doc", _build_minimal_doc())
     _write_docx(SAMPLE_DIR / "sample.docx")
 
     for name in [
