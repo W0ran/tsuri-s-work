@@ -19,6 +19,7 @@ allure-report/
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
 
 # Сгенерированные тестовые файлы (создаются автоматически generate_fixtures.py)
 fixtures/sample_documents/

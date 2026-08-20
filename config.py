@@ -18,13 +18,13 @@ USERS = {
         "login": os.getenv("ADMIN_LOGIN"),
         "password": os.getenv("ADMIN_PASSWORD"),
     },
-    "chairman": {
-        "login": os.getenv("CHAIRMAN_LOGIN"),
-        "password": os.getenv("CHAIRMAN_PASSWORD"),
+    "predsedatel": {
+        "login": os.getenv("PREDSEDATEL_LOGIN"),
+        "password": os.getenv("PREDSEDATEL_PASSWORD"),
     },
-    "board_member": {
-        "login": os.getenv("BOARDMEMB_LOGIN"),
-        "password": os.getenv("BOARDMEMB_PASSWORD"),
+    "sovet_tsuri": {
+        "login": os.getenv("SOVET_TSURI_LOGIN"),
+        "password": os.getenv("SOVET_TSURI_PASSWORD"),
     },
 }
 

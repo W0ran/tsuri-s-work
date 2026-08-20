@@ -5,10 +5,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 from playwright.sync_api import Page
-from pages.login_page import LoginPage
-from pages.upload_page import UploadPage
-from pages.wizard_page import WizardPage
+from pages.common.login_page import LoginPage
 import config
+
+from generate_fixtures import ensure_fixture_files
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _prepare_test_files():
+    ensure_fixture_files()
 
 
 @pytest.fixture
@@ -18,37 +23,23 @@ def login_page(page: Page) -> LoginPage:
     return lp
 
 
-ALL_ROLES = ["applicant", "expert", "admin", "chairman", "board_member"]
-# Временно ограничено ролью "applicant": для остальных ролей ещё не изучен
-# реальный UI-флоу (есть ли у них "Создать заявку", куда логин их приводит и
-# т.д. — предварительная проверка показала разное и нестабильное поведение).
-# Верните ALL_ROLES, когда флоу для каждой роли будет проверен и учтён в
-# WizardPage/UploadPage.
-ACTIVE_ROLES = ["applicant"]
+ALL_ROLES = ["applicant", "expert", "admin", "predsedatel", "sovet_tsuri"]
 
 
-@pytest.fixture(params=ACTIVE_ROLES)
+@pytest.fixture(params=ALL_ROLES)
 def role(request) -> str:
+    """Параметризация по всем ролям — используется в common/ и workflows/
+    тестах, где поведение должно быть одинаковым независимо от роли."""
     return request.param
 
 
-@pytest.fixture
-def logged_in_page(login_page: LoginPage, role: str) -> Page:
+def login_as(login_page: LoginPage, role: str) -> Page:
+    """Логинит под указанной ролью; пропускает тест (pytest.skip), если в
+    .env нет логина/пароля для этой роли. Переиспользуется ролевыми
+    conftest.py (tests/applicant/conftest.py и т.д.) для получения
+    залогиненной страницы под конкретную, не параметризованную роль."""
     creds = config.USERS[role]
     if not creds["login"] or not creds["password"]:
         pytest.skip(f"В .env нет логина/пароля для роли '{role}' — тест пропущен")
     login_page.login(creds["login"], creds["password"])
     return login_page.page
-
-
-@pytest.fixture
-def upload_page(logged_in_page) -> UploadPage:
-    wizard = WizardPage(logged_in_page)
-    wizard.start_new_application_and_reach_documents()
-    return UploadPage(logged_in_page)
-
-from generate_fixtures import ensure_fixture_files
-
-@pytest.fixture(scope="session", autouse=True)
-def _prepare_test_files():
-    ensure_fixture_files()

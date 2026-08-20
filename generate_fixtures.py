@@ -1,8 +1,11 @@
 """Генерация тестовых файлов для тестов загрузки документов (fixtures/).
 
 Вызывается автоматически из tests/conftest.py перед прогоном тестов, чтобы
-fixtures/sample_documents и fixtures/invalid_documents всегда были на месте,
-даже на чистом клоне репозитория (эти файлы не хранятся в git).
+fixtures/applicant/sample_documents и fixtures/applicant/invalid_documents
+всегда были на месте, даже на чистом клоне репозитория (эти файлы не хранятся
+в git). Сейчас загрузка документов есть только у роли "applicant" — при
+появлении загрузки файлов у других ролей добавить сюда fixtures/<role>/...
+по аналогии.
 """
 
 import struct
@@ -10,8 +13,8 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SAMPLE_DIR = ROOT / "fixtures" / "sample_documents"
-INVALID_DIR = ROOT / "fixtures" / "invalid_documents"
+SAMPLE_DIR = ROOT / "fixtures" / "applicant" / "sample_documents"
+INVALID_DIR = ROOT / "fixtures" / "applicant" / "invalid_documents"
 
 MINIMAL_PDF = b"""%PDF-1.4
 1 0 obj
