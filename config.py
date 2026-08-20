@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_URL", "https://ai-expert.digitalplatform.kz")
+BASE_URL = os.getenv("BASE_URL", "https://dev-ai-expert.digitalplatform.kz")
 
 USERS = {
     "applicant": {
