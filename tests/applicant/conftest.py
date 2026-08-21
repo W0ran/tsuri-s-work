@@ -22,3 +22,15 @@ def upload_page(applicant_page) -> UploadPage:
     wizard = WizardPage(applicant_page)
     wizard.start_new_application_and_reach_documents()
     return UploadPage(applicant_page)
+
+
+@pytest.fixture
+def application_params_page(applicant_page) -> WizardPage:
+    """Доводит до раздела "Параметры" (подраздел "1. Основное"), не уходя
+    во вкладку "Документы" — нужно для тестов, которые работают с полями
+    заявки (Заявитель, Производитель, Торговое наименование и т.д.)."""
+    wizard = WizardPage(applicant_page)
+    wizard.open_new_application()
+    wizard.select_default_criteria()
+    applicant_page.wait_for_timeout(1000)
+    return wizard

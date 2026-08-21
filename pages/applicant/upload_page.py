@@ -92,6 +92,43 @@ class UploadPage(BasePage):
         card = self._card_for_extension(file_paths[0])
         card.locator("input[type='file']").set_input_files(file_paths)
 
+    def upload_all_required_documents(self) -> int:
+        """Закрывает все обязательные карточки документов на вкладке
+        "Документы" валидными файлами — нужно, чтобы разблокировать реальную
+        подачу заявки. Карточки-обёртки разделов и альтернативный загрузчик
+        "досье целиком" отличаются от карточек одного типа документа именно
+        числом input[type=file] (не 1) — по этому признаку и фильтруем,
+        т.к. заголовки карточек слишком длинные/неединообразные для матчинга
+        по тексту."""
+        cards = self.page.locator("[data-slot='card']").all()
+        filled = 0
+        for card in cards:
+            file_inputs = card.locator("input[type='file']")
+            if file_inputs.count() != 1:
+                continue
+            accept = file_inputs.first.get_attribute("accept") or ""
+            if "pdf" in accept:
+                src = "fixtures/applicant/sample_documents/sample.pdf"
+            elif "jpg" in accept or "jpeg" in accept or "png" in accept:
+                src = "fixtures/applicant/sample_documents/sample.jpg"
+            else:
+                continue
+            unique_path = self.make_unique_copy(src)
+            unique_name = Path(unique_path).name
+            file_inputs.first.set_input_files(unique_path)
+            # некоторые карточки (сильно накопившие файлы за прошлые прогоны)
+            # рендерят ДВА [data-slot='card-content'] (внешний с усечённым
+            # описанием + внутренний со списком файлов) — bare-локатор ловит
+            # "strict mode violation"; используем тот же точный паттерн
+            # "строка одного файла", что и _uploaded_chip/wait_for_upload_complete
+            expect(
+                card.locator("[data-slot='card-content'] > div").filter(
+                    has=self.page.get_by_text(unique_name, exact=True)
+                )
+            ).to_be_visible(timeout=60_000)
+            filled += 1
+        return filled
+
     def _uploaded_chip(self, card: Locator, filename: str) -> Locator:
         """Строка одного конкретного загруженного файла.
 

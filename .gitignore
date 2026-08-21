@@ -25,6 +25,9 @@ playwright/.cache/
 fixtures/sample_documents/
 fixtures/invalid_documents/
 
+# Лог заявок, отправленных test-submit для отложенной проверки stored XSS в очереди эксперта
+fixtures/_stored_xss_pending.jsonl
+
 # IDE
 .vscode/
 .idea/
