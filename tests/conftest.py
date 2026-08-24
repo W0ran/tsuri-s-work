@@ -11,6 +11,29 @@ import config
 from generate_fixtures import ensure_fixture_files
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--sqli-payload",
+        action="store",
+        default=None,
+        help="Run the isolated SQLi sweep with one payload instead of all payloads",
+    )
+    parser.addoption(
+        "--sqli-chunk",
+        action="store",
+        type=int,
+        default=None,
+        help="1-based chunk number of fields to run in the isolated SQLi sweep",
+    )
+    parser.addoption(
+        "--sqli-chunk-size",
+        action="store",
+        type=int,
+        default=15,
+        help="Number of fields per SQLi sweep chunk (default: 15)",
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _prepare_test_files():
     ensure_fixture_files()

@@ -59,6 +59,10 @@ class WizardPage(BasePage):
     def save_draft_button(self) -> Locator:
         return self.page.get_by_role("button", name=self.SAVE_DRAFT_BUTTON_TEXT)
 
+    def save_draft(self) -> None:
+        self.save_draft_button().click()
+        self.page.wait_for_timeout(800)
+
     def fill_required_top_level_fields(
         self,
         applicant: str = "QA Test Applicant LLP",

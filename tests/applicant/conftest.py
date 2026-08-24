@@ -26,11 +26,18 @@ def upload_page(applicant_page) -> UploadPage:
 
 @pytest.fixture
 def application_params_page(applicant_page) -> WizardPage:
-    """Доводит до раздела "Параметры" (подраздел "1. Основное"), не уходя
-    во вкладку "Документы" — нужно для тестов, которые работают с полями
-    заявки (Заявитель, Производитель, Торговое наименование и т.д.)."""
+    """Доходит до раздела "Параметры" новой заявки (подраздел "1. Основное"
+    открыт по умолчанию), не переходя на вкладку "Документы" — нужно для
+    security-тестов, проверяющих поля самой заявки (SQLi/XSS), а не загрузку
+    файлов."""
     wizard = WizardPage(applicant_page)
     wizard.open_new_application()
     wizard.select_default_criteria()
     applicant_page.wait_for_timeout(1000)
     return wizard
+
+
+@pytest.fixture
+def wizard_page(application_params_page) -> WizardPage:
+    """Alias used by the isolated full-form security sweeps."""
+    return application_params_page

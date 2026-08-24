@@ -49,6 +49,22 @@ python -m pytest -m "not security" -v
 python -m pytest tests/
 ```
 
+Полный SQLi sweep полей заявки запускается отдельно: `207` полей x `4` payload'а = `828` кейсов.
+Обычный прогон его не включает.
+
+```powershell
+# Все payload'ы
+python -m pytest -m full_sweep -v --headed
+
+# Быстрый замер на одном payload'е: 207 кейсов
+python -m pytest -m full_sweep --sqli-payload "' OR '1'='1" -v --headed
+
+# Один чанк из 15 полей: 15 кейсов с одним payload'ом
+python -m pytest -m full_sweep --sqli-payload "' OR '1'='1" --sqli-chunk 1 --sqli-chunk-size 15 -v --headed
+
+# Чанки нумеруются с 1; для 207 полей и размера 15 последний чанк — 14
+```
+
 ## Структура проекта
 
 ```
@@ -78,6 +94,7 @@ tests/
     common/       — SQLi в форме логина (рабочий)
     applicant/    — глубокая проверка загружаемых файлов (рабочий; содержит xfail-находку
                     про обход защиты от zip-бомбы в валидных DOCX-контейнерах)
+                    полный SQLi sweep полей заявки запускается отдельно по маркеру full_sweep
     expert/       — заглушка, отложено
     admin/        — заглушка, отложено
     predsedatel/  — заглушка, отложено

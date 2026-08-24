@@ -10,7 +10,12 @@ TEST_MARKER_PREFIX = "QA-AUTOTEST-"
 # одного прогона. Проверка "видно ли эксперту" вынесена в отдельный,
 # самостоятельно пропускающий себя тест, который читает этот лог заявок,
 # отправленных на предыдущих прогонах.
-_PENDING_LOG_PATH = Path(__file__).resolve().parent.parent / "fixtures" / "_stored_xss_pending.jsonl"
+#
+# Путь — внутри fixtures/applicant/, по аналогии с остальными fixtures этой
+# роли (см. README про структуру fixtures/<role>/).
+_PENDING_LOG_PATH = (
+    Path(__file__).resolve().parent.parent / "fixtures" / "applicant" / "_stored_xss_pending.jsonl"
+)
 
 
 def make_test_application_name(base_name: str = "Тестовый препарат") -> str:

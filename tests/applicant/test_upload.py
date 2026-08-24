@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from pages.applicant.upload_page import UploadPage
+from utils.test_data_marker import make_test_application_name
 
 VALID_FILES = {
     "pdf": "fixtures/applicant/sample_documents/sample.pdf",
@@ -50,12 +51,25 @@ def test_upload_spoofed_extension_rejected(upload_page: UploadPage):
     assert upload_page.is_error_visible()
 
 
-def test_submit_without_files_blocked(upload_page: UploadPage):
-    # реальная кнопка отправки — "Отправить в экспертизу" на шаге "Проверка".
-    # Она задизейблена, пока не заполнены все обязательные типы документов
-    # (в т.ч. если не загружен вообще ни один новый документ в этой сессии).
+def test_submit_without_files_blocked(application_params_page):
+    """Precondition: РЕАЛЬНО новая заявка через wizard, без единого документа
+    — не общий переиспользуемый черновик стенда, где документы накоплены
+    за все прошлые прогоны и кнопка отправки была бы активна законно."""
+    wizard = application_params_page
+    wizard.fill_required_top_level_fields()
+
+    marker_name = make_test_application_name()
+    wizard.go_to_section("2. Сведения о ЛС")
+    wizard.trade_name_field().fill(marker_name)
+
+    wizard.go_to_documents_tab()
+    upload_page = UploadPage(wizard.page)
+
     upload_page.go_to_review()
-    assert not upload_page.is_submit_enabled()
+    assert not upload_page.is_submit_enabled(), (
+        "Кнопка 'Отправить в экспертизу' активна на заведомо новой заявке "
+        "без единого загруженного документа"
+    )
 
 
 def test_upload_multiple_files(upload_page: UploadPage):
